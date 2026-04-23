@@ -25,29 +25,109 @@ def load_data():
         conn.close()
     return df
 
-def update_log_and_content(df_old, df_new):
+def update_log_and_content(df_edited):
     conn = get_db_connection()
     cursor = conn.cursor()
     updated_count = 0
-    for i in range(len(df_new)):
-        new_row = df_new.iloc[i]; old_row = df_old.iloc[i]
-        if (str(new_row['曲名']).strip() != str(old_row['曲名']).strip() or 
-            str(new_row['アーティスト']).strip() != str(old_row['アーティスト']).strip() or 
-            str(new_row['カテゴリ']) != str(old_row['カテゴリ'])):
+    
+    # 1. 比較用に現在のマスタデータを一括取得
+    current_masters = pd.read_sql("SELECT content_id, title, artist, category FROM m_contents", conn)
+    current_masters = current_masters.set_index('content_id')
+
+    for _, row in df_edited.iterrows():
+        cid = row['content_id']
+        
+        # データベースに存在しないIDはスキップ
+        if cid not in current_masters.index:
+            continue
             
-            cursor.execute("SELECT content_id FROM m_contents WHERE title = ? AND artist = ? AND category = ?", 
-                           (new_row['曲名'], new_row['アーティスト'], new_row['カテゴリ']))
-            res = cursor.fetchone()
-            tid = res[0] if res else None
-            if not tid:
-                cursor.execute("INSERT INTO m_contents (title, artist, category) VALUES (?, ?, ?)", 
-                               (new_row['曲名'], new_row['アーティスト'], new_row['カテゴリ']))
-                tid = cursor.lastrowid
+        old_master = current_masters.loc[cid]
+        
+        # 2. 画面上の値と、DB上の「現在の値」を比較
+        # ※ df_old(アプリ上の古い値)ではなく、DBの値を正として比較します
+        has_changed = (
+            str(row['曲名']).strip() != str(old_master['title']).strip() or
+            str(row['アーティスト']).strip() != str(old_master['artist']).strip() or
+            str(row['カテゴリ']) != str(old_master['category'])
+        )
+        
+        if has_changed:
+            # ③ m_contents (マスタ) の更新
+            cursor.execute("""
+                UPDATE m_contents 
+                SET title = ?, artist = ?, category = ? 
+                WHERE content_id = ?
+            """, (row['曲名'], row['アーティスト'], row['カテゴリ'], cid))
+
+            # ④ 履歴への記録
+            # ログには「DBに元々入っていた値」を old として記録します
+            cursor.execute("""
+                INSERT INTO t_edit_history 
+                (content_id, old_title, new_title, old_artist, new_artist, old_category, new_category, edit_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            """, (
+                cid,
+                old_master['title'], row['曲名'],
+                old_master['artist'], row['アーティスト'],
+                old_master['category'], row['カテゴリ']
+            ))
             
-            cursor.execute("UPDATE t_singing_logs SET content_id = ? WHERE rowid = ?", (tid, new_row['log_id']))
-            old_t = old_row['曲名'] if old_row['曲名'] else "(EMPTY)"
-            cursor.execute("INSERT INTO t_edit_history (log_id, old_title, new_title, category) VALUES (?, ?, ?, ?)", 
-                           (new_row['log_id'], old_t, new_row['曲名'], new_row['カテゴリ']))
             updated_count += 1
-    conn.commit(); conn.close()
+            
+    conn.commit()
+    conn.close()
     return updated_count
+
+
+# logic.py
+
+def get_edit_logs(limit=100):
+    """履歴一覧を取得する"""
+    conn = get_db_connection()
+    try:
+        query = """
+            SELECT edit_id, 
+                   datetime(edit_at, 'localtime') as edit_time, 
+                   old_title, new_title, 
+                   old_artist, new_artist,
+                   old_category, new_category,
+                   content_id
+            FROM t_edit_history 
+            ORDER BY edit_at DESC LIMIT ?
+        """
+        return pd.read_sql(query, conn, params=(limit,))
+    finally:
+        conn.close()
+
+def restore_from_log(log_row):
+    """特定のログデータからメインテーブルを復元し、その事実をログに残す"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # 1. メインテーブルを復元
+        cursor.execute("""
+            UPDATE t_main 
+            SET title = ?, artist = ?, category = ? 
+            WHERE content_id = ?
+        """, (log_row['old_title'], log_row['old_artist'], log_row['old_category'], log_row['content_id']))
+        
+        # 2. 復元した事実を新しい履歴として記録
+        from datetime import datetime
+        cursor.execute("""
+            INSERT INTO t_edit_history 
+            (content_id, old_title, new_title, old_artist, new_artist, old_category, new_category, edit_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            log_row['content_id'], 
+            log_row['new_title'], log_row['old_title'],     # 逆転
+            log_row['new_artist'], log_row['old_artist'], 
+            log_row['new_category'], log_row['old_category'],
+            datetime.now()
+        ))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error restoring log: {e}")
+        return False
+    finally:
+        conn.close()

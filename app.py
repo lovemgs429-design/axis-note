@@ -18,6 +18,7 @@ def reset_all_filters():
     st.session_state.search_word = ""
     st.session_state.artist_select = "すべて"
     st.session_state.category_select = "Singing"
+    st.session_state.sort_select = "最新順"
 
 # サイドバーへのSNSリンク：指定のURLを反映
 st.sidebar.markdown("### ◢ Links")
@@ -30,22 +31,25 @@ try:
     if "search_word" not in st.session_state: st.session_state.search_word = ""
     if "artist_select" not in st.session_state: st.session_state.artist_select = "すべて"
     if "category_select" not in st.session_state: st.session_state.category_select = "Singing"
+    if "sort_select" not in st.session_state: st.session_state.sort_select = "最新順"
 
     # 2. ナビゲーション：公開用として Home のみに限定
     menu = st.sidebar.radio("Navigation", ["🦋 Home"])
     render_header()
 
     if menu == "🦋 Home":
-        # フィルターエリア：元の仕様を完全維持
-        f1, f2, f3, f4 = st.columns([2, 1, 1, 0.5])
+        f1, f2, f3, f4, f5 = st.columns([2, 1, 1, 1, 0.5])
         with f1: st.text_input("🔍 Search", key="search_word", placeholder="曲名や配信名...")
         with f2: 
             arts = ["すべて", "XIDEN"] + sorted([a for a in df_all["アーティスト"].unique() if a and a != "XIDEN"])
             st.selectbox("👤 Artist", arts, key="artist_select")
         with f3: st.selectbox("Category", ["すべて", "Singing", "Talk"], key="category_select")
         
-        is_filtered = (st.session_state.search_word != "" or st.session_state.artist_select != "すべて" or st.session_state.category_select != "Singing")
-        with f4:
+        is_filtered = (st.session_state.search_word != "" or st.session_state.artist_select != "すべて" or st.session_state.category_select != "Singing" or st.session_state.sort_select != "最新順")
+        with f4: 
+            # ソート順の選択肢を追加
+            sort_option = st.selectbox("Sort", ["最新順", "おすすめ順"],key="sort_select")
+        with f5:
             st.markdown("<br>", unsafe_allow_html=True)
             if is_filtered: st.button("✕", on_click=reset_all_filters)
 
@@ -58,6 +62,15 @@ try:
 
         f_df["Play"] = f_df.apply(lambda r: f"https://youtu.be/{r['stream_id']}?t={r['start_time']}", axis=1)
         f_df["開始"] = f_df["start_time"].apply(lambda x: f"{int(x//60):02}:{int(x%60):02}")
+
+        # 3. ソート処理
+        if sort_option == "おすすめ順":
+            f_df = f_df.sort_values("盛り上がり度", ascending=False)
+        else:
+            # これで '開始' 列が存在するのでエラーになりません
+            f_df = f_df.sort_values(["配信日", "開始"], ascending=[False, True])
+
+        # 4. 表示
         disp = ["Play", "曲名", "アーティスト", "開始", "配信日", "配信名"]
         if st.session_state.category_select == "すべて": disp.append("カテゴリ")
         
