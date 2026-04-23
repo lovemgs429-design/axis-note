@@ -7,6 +7,7 @@ from style import apply_custom_style, render_header
 # 1. 初期化：サイドバーを初期状態で非表示（collapsed）に設定
 st.set_page_config(
     page_title="aXIs NOTE 🦋⛓", 
+    page_icon="🦋",
     layout="wide", 
     initial_sidebar_state="collapsed"
 )
