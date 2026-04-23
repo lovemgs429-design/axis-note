@@ -100,18 +100,25 @@ def get_edit_logs(limit=100):
         conn.close()
 
 def restore_from_log(log_row):
-    """特定のログデータからメインテーブルを復元し、その事実をログに残す"""
+    """特定のログデータからマスタテーブルを復元する"""
     conn = get_db_connection()
+    # 1. まず cursor を作成する（これが無いとエラーになります）
     cursor = conn.cursor()
+    
     try:
-        # 1. メインテーブルを復元
+        # 【重要】もし「曲名」でエラーが出る場合は、ここを title, artist, category に書き換えてください
         cursor.execute("""
-            UPDATE t_main 
-            SET title = ?, artist = ?, category = ? 
+            UPDATE m_contents 
+            SET title = ?, artist = ?, category = ?
             WHERE content_id = ?
-        """, (log_row['old_title'], log_row['old_artist'], log_row['old_category'], log_row['content_id']))
+        """, (
+            log_row['old_title'], 
+            log_row['old_artist'], 
+            log_row['old_category'], 
+            log_row['content_id']
+        ))
         
-        # 2. 復元した事実を新しい履歴として記録
+        # 2. 履歴の保存
         from datetime import datetime
         cursor.execute("""
             INSERT INTO t_edit_history 
@@ -119,15 +126,18 @@ def restore_from_log(log_row):
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             log_row['content_id'], 
-            log_row['new_title'], log_row['old_title'],     # 逆転
+            log_row['new_title'], log_row['old_title'], 
             log_row['new_artist'], log_row['old_artist'], 
             log_row['new_category'], log_row['old_category'],
-            datetime.now()
+            datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         ))
+        
         conn.commit()
         return True
     except Exception as e:
+        # エラーが出た場合、原因をプリントします
         print(f"Error restoring log: {e}")
         return False
     finally:
+        # 最後に必ず閉じる
         conn.close()
