@@ -31,13 +31,21 @@ st.sidebar.link_button("YouTube", "https://www.youtube.com/@XIDEN_RKMusic")
 # 2つの情報を1行に凝縮
 st.sidebar.caption("XIDEN Official / 歌唱ログ・DB参照先アーカイブ")
 
-st.sidebar.divider() 
+# ナビゲーション
+st.sidebar.divider()
+menu = st.sidebar.radio("Navigation", ["🦋 Home"])
 
-# 自作アプリのボタン
-# 絵文字を少し整理して、アプリ名としての「aXIs」を強調
-st.sidebar.link_button("aXIs Web Player 🦋⛓", "https://axis-web-player-v1.streamlit.app/")
-st.sidebar.caption("Personal Project (Beta)")
-st.sidebar.markdown("---")
+st.sidebar.write("")
+
+# バージョン情報に擬態。🦋⛓ をクリックした時だけ Web Player へ
+st.sidebar.markdown(
+    '<div style="text-align: left; color: gray; font-size: 11px; opacity: 0.7;">'
+    'v1.0.0-release | '
+    '<a href="https://axis-web-player-v1.streamlit.app/" '
+    'style="text-decoration: none; color: inherit;">🦋⛓</a>'
+    '</div>', 
+    unsafe_allow_html=True
+)
 
 try:
     df_all = load_data()
@@ -47,7 +55,6 @@ try:
     if "sort_select" not in st.session_state: st.session_state.sort_select = "最新順"
 
     # 2. ナビゲーション：公開用として Home のみに限定
-    menu = st.sidebar.radio("Navigation", ["🦋 Home"])
     render_header()
 
     if menu == "🦋 Home":
