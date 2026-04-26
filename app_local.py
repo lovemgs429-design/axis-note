@@ -23,8 +23,21 @@ def reset_all_filters():
 
 # サイドバーへのSNSリンク：指定のURLを反映
 st.sidebar.markdown("### ◢ Links")
+# Xのボタン
 st.sidebar.link_button("𝕏 (Twitter)", "https://x.com/XIDEN_RKMusic")
+st.sidebar.caption("XIDEN Official X Account")
+
+# YouTubeのボタン
 st.sidebar.link_button("YouTube", "https://www.youtube.com/@XIDEN_RKMusic")
+# 2つの情報を1行に凝縮
+st.sidebar.caption("XIDEN Official / 歌唱ログ・DB参照先アーカイブ")
+
+st.sidebar.divider() 
+
+# 自作アプリのボタン
+# 絵文字を少し整理して、アプリ名としての「aXIs」を強調
+st.sidebar.link_button("aXIs Web Player 🦋⛓", "https://axis-web-player-v1.streamlit.app/")
+st.sidebar.caption("Personal Project (Beta)")
 st.sidebar.markdown("---")
 
 try:
