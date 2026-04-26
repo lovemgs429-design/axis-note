@@ -68,7 +68,7 @@ try:
             f_df = f_df.sort_values("盛り上がり度", ascending=False)
         else:
             # これで '開始' 列が存在するのでエラーになりません
-            f_df = f_df.sort_values(["配信日", "開始"], ascending=[False, True])
+            f_df = f_df.sort_values(["配信日", "配信名", "start_time"], ascending=[False, False, True])
 
         # 4. 表示
         disp = ["Play", "曲名", "アーティスト", "開始", "配信日", "配信名"]

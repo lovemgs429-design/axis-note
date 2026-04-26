@@ -17,7 +17,7 @@ def load_data():
             LEFT JOIN m_aliases a ON c.content_id = a.content_id
             LEFT JOIN t_streams s ON l.stream_id = s.stream_id
             GROUP BY l.stream_id, l.start_time
-            ORDER BY s.published_at DESC, l.start_time ASC
+            ORDER BY s.published_at DESC, s.stream_title DESC, l.start_time ASC
         """, conn)
     except:
         df = pd.DataFrame()
