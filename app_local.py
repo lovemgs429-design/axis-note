@@ -101,7 +101,7 @@ try:
         
         st.dataframe(
             f_df[disp], 
-            use_container_width=True, 
+            width="stretch", 
             hide_index=True, 
             column_config={"Play": st.column_config.LinkColumn("▶️", display_text="📺")}
         )
@@ -125,7 +125,7 @@ try:
         edited_df = st.data_editor(
             edit_df,
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
             key="editor_grid",
             column_config={
                 # ID列を見えるようにし、編集不可(disabled)に設定
@@ -201,10 +201,10 @@ try:
                     if is_restored:
                         # 復元済みの場合はメッセージと無効化ボタンを表示
                         st.success("✅ この状態に復元済みです")
-                        st.button("復元完了", key=f"btn_{row['edit_id']}", disabled=True, use_container_width=True)
+                        st.button("復元完了", key=f"btn_{row['edit_id']}", disabled=True, width="stretch")
                     else:
                         # 未復元の場合はアクティブなボタンを表示
-                        if st.button("⏪ この状態に復元する", key=f"btn_{row['edit_id']}", type="primary", use_container_width=True):
+                        if st.button("⏪ この状態に復元する", key=f"btn_{row['edit_id']}", type="primary", width="stretch"):
                             # 押された瞬間にセッション状態へIDを保存
                             st.session_state["restoring_ids"].add(row['edit_id'])
                             

@@ -102,7 +102,7 @@ try:
         disp = ["Play", "曲名", "アーティスト", "開始", "配信日", "配信名"]
         if st.session_state.category_select == "すべて": disp.append("カテゴリ")
         
-        st.dataframe(f_df[disp], use_container_width=True, hide_index=True, column_config={"Play": st.column_config.LinkColumn("▶️", display_text="📺")})
+        st.dataframe(f_df[disp], width="stretch", hide_index=True, column_config={"Play": st.column_config.LinkColumn("▶️", display_text="📺")})
 
 except Exception as e:
     st.error(f"Global Error: {e}")
