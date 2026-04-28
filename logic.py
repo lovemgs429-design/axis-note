@@ -25,6 +25,14 @@ def load_data():
             GROUP BY l.stream_id, l.start_time
             ORDER BY s.published_at DESC, s.stream_title DESC, l.start_time ASC
         """, conn)
+
+        # 【高速化】検索用インデックス列の作成
+        # 曲名、アーティスト、配信名を統合して小文字化しておく
+        df["search_index"] = (
+            df["曲名"].fillna("") + " " + 
+            df["アーティスト"].fillna("") + " " + 
+            df["配信名"].fillna("")
+        ).str.lower()
     except:
         df = pd.DataFrame()
     finally:

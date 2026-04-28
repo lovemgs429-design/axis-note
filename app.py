@@ -73,13 +73,21 @@ try:
             st.markdown("<br>", unsafe_allow_html=True)
             if is_filtered: st.button("✕", on_click=reset_all_filters)
 
-        # データの絞り込み・表示ロジック：元の仕様を完全維持
-        f_df = df_all.copy()
-        if st.session_state.search_word:
-            f_df = f_df[f_df["曲名"].str.contains(st.session_state.search_word, case=False, na=False) | f_df["配信名"].str.contains(st.session_state.search_word, case=False, na=False)]
-        if st.session_state.artist_select != "すべて": f_df = f_df[f_df["アーティスト"] == st.session_state.artist_select]
-        if st.session_state.category_select != "すべて": f_df = f_df[f_df["カテゴリ"] == st.session_state.category_select]
+        # 1. コピーをせず参照から開始（メモリ節約）
+        f_df = df_all
 
+        # 2. 検索ワードによる絞り込み（高速な1カラム検索）
+        if st.session_state.search_word:
+            # 検索ワードも小文字にして比較
+            sw = st.session_state.search_word.lower()
+            f_df = f_df[f_df["search_index"].str.contains(sw, na=False)]
+
+        # 3. プルダウンによる絞り込み（完全一致は非常に高速）
+        if st.session_state.artist_select != "すべて":
+            f_df = f_df[f_df["アーティスト"] == st.session_state.artist_select]
+            
+        if st.session_state.category_select != "すべて":
+            f_df = f_df[f_df["カテゴリ"] == st.session_state.category_select]
         f_df["Play"] = f_df.apply(lambda r: f"https://youtu.be/{r['stream_id']}?t={r['start_time']}", axis=1)
         f_df["開始"] = f_df["start_time"].apply(lambda x: f"{int(x//60):02}:{int(x%60):02}")
 
