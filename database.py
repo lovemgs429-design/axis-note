@@ -21,5 +21,11 @@ def init_db():
     cols = [c[1] for c in cursor.fetchall()]
     if "category" not in cols:
         cursor.execute("ALTER TABLE t_edit_history ADD COLUMN category TEXT")
+
+    # インデックスの追加
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_log_content_id ON t_singing_logs(content_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_log_stream_id ON t_singing_logs(stream_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_title ON m_contents(title)")
+
     conn.commit()
     conn.close()
