@@ -47,6 +47,20 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
+st.sidebar.divider()
+st.sidebar.markdown(
+    """
+    <div style="font-size: 10px; color: gray; opacity: 0.8;">
+    <b>◢ Legal & Compliance</b><br>
+    This app uses the YouTube API Services.<br>
+    By using this app, users are agreeing to be bound by the 
+    <a href="https://www.youtube.com/t/terms" target="_blank" style="color: gray;">YouTube Terms of Service</a>.<br>
+    Please also refer to the <a href="https://policies.google.com/privacy" target="_blank" style="color: gray;">Google Privacy Policy</a>.
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
+
 try:
     df_all = load_data()
     if "search_word" not in st.session_state: st.session_state.search_word = ""
