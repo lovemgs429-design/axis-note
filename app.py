@@ -3,6 +3,10 @@ import pandas as pd
 from database import init_db, get_db_connection
 from logic import load_data, update_log_and_content
 from style import apply_custom_style, render_header
+from streamlit_gsheets import GSheetsConnection
+import datetime
+
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 # 1. 初期化：サイドバーを初期状態で非表示（collapsed）に設定
 st.set_page_config(
@@ -46,6 +50,37 @@ st.sidebar.markdown(
     '</div>', 
     unsafe_allow_html=True
 )
+
+with st.sidebar.expander("💬 感想・意見・バグ報告"):
+    with st.form("feedback_form", clear_on_submit=True):
+        name = st.text_input("お名前（任意）", placeholder="匿名希望")
+        comment = st.text_area("改善案や不具合を教えてください", placeholder="ここに入力してください")
+        submitted = st.form_submit_button("送信")
+
+        if submitted:
+            if not comment:
+                st.error("メッセージを入力してください。")
+            else:
+                try:
+                    ss_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+                    df = conn.read(spreadsheet=ss_url, ttl=0)
+                    
+                    new_data = pd.DataFrame([{
+                        "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "name": name if name else "匿名",
+                        "comment": comment
+                    }])
+                    
+                    updated_df = pd.concat([df, new_data], ignore_index=True)
+                    conn.update(spreadsheet=ss_url, data=updated_df)
+                    
+                    # --- 変更点：成功時はフォームの代わりにメッセージを表示 ---
+                    st.balloons() # お祝いの風船（任意）
+                    st.success("報告を受け付けました。ありがとうございます！🦋⛓")
+                    # st.rerun() はあえて書かない
+                    
+                except Exception as e:
+                    st.error(f"送信に失敗しました。詳細エラー: {e}")
 
 st.sidebar.divider()
 st.sidebar.markdown(
